@@ -352,7 +352,7 @@ graph LR
 
 ### 环境变量
 > One API 支持从 `.env` 文件中读取环境变量，请参照 `.env.example` 文件，使用时请将其重命名为 `.env`。
-1. `REDIS_CONN_STRING`：设置之后将使用 Redis 作为缓存使用。
+1. `REDIS_CONN_STRING`：设置之后将使用 Redis 或 Valkey 作为缓存使用。Valkey 是 BSD 许可的 Redis 兼容服务，本仓库默认 docker-compose 已改用 `valkey/valkey:8`。也可用 `VALKEY_CONN_STRING` 或 `VALKEY_URL` 作为别名。
    + 例子：`REDIS_CONN_STRING=redis://default:redispw@localhost:49153`
    + 如果数据库访问延迟很低，没有必要启用 Redis，启用后反而会出现数据滞后的问题。
    + 如果需要使用哨兵或者集群模式：
