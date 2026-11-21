@@ -13,11 +13,21 @@ import (
 var RDB redis.Cmdable
 var RedisEnabled = true
 
+// redisConnString returns REDIS_CONN_STRING, or a Valkey alias if that is unset.
+func redisConnString() string {
+	for _, key := range []string{"REDIS_CONN_STRING", "VALKEY_CONN_STRING", "VALKEY_URL"} {
+		if value := os.Getenv(key); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
 // InitRedisClient This function is called after init()
 func InitRedisClient() (err error) {
-	if os.Getenv("REDIS_CONN_STRING") == "" {
+	if redisConnString() == "" {
 		RedisEnabled = false
-		logger.SysLog("REDIS_CONN_STRING not set, Redis is not enabled")
+		logger.SysLog("REDIS_CONN_STRING not set, Redis/Valkey is not enabled")
 		return nil
 	}
 	if os.Getenv("SYNC_FREQUENCY") == "" {
@@ -25,10 +35,10 @@ func InitRedisClient() (err error) {
 		logger.SysLog("SYNC_FREQUENCY not set, Redis is disabled")
 		return nil
 	}
-	redisConnString := os.Getenv("REDIS_CONN_STRING")
+	connString := redisConnString()
 	if os.Getenv("REDIS_MASTER_NAME") == "" {
 		logger.SysLog("Redis is enabled")
-		opt, err := redis.ParseURL(redisConnString)
+		opt, err := redis.ParseURL(connString)
 		if err != nil {
 			logger.FatalLog("failed to parse Redis connection string: " + err.Error())
 		}
@@ -37,7 +47,7 @@ func InitRedisClient() (err error) {
 		// cluster mode
 		logger.SysLog("Redis cluster mode enabled")
 		RDB = redis.NewUniversalClient(&redis.UniversalOptions{
-			Addrs:      strings.Split(redisConnString, ","),
+			Addrs:      strings.Split(connString, ","),
 			Password:   os.Getenv("REDIS_PASSWORD"),
 			MasterName: os.Getenv("REDIS_MASTER_NAME"),
 		})
@@ -53,7 +63,7 @@ func InitRedisClient() (err error) {
 }
 
 func ParseRedisOption() *redis.Options {
-	opt, err := redis.ParseURL(os.Getenv("REDIS_CONN_STRING"))
+	opt, err := redis.ParseURL(redisConnString())
 	if err != nil {
 		logger.FatalLog("failed to parse Redis connection string: " + err.Error())
 	}
